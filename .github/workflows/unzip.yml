@@ -1,9 +1,25 @@
-# 1. Скачиваем репозиторий с вашим stardict.zip
-   #   - name: Checkout repository
-    #    uses: actions/checkout@v4
+name: Unpack ZIP File
 
-      # 2. Распаковываем архив
-      - name: Unpack ZIP
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  unzip-job:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Unpack ZIP archive
         run: |
-          # unzip -o распакует stardict.zip в папку stardict_src
+          mkdir -p dict_src
           unzip -o ApresyanEnRu.dictionary.zip -d dict_src
+
+      - name: Upload Unzipped Content
+        uses: actions/upload-artifact@v4
+        with:
+          name: Unzipped-Files
+          path: dict_src/
