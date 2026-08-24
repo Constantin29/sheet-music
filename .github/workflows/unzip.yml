@@ -1,6 +1,6 @@
 # 1. Скачиваем репозиторий с вашим stardict.zip
-      - name: Checkout repository
-        uses: actions/checkout@v4
+   #   - name: Checkout repository
+    #    uses: actions/checkout@v4
 
       # 2. Распаковываем архив
       - name: Unpack ZIP
