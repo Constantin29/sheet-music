@@ -1,4 +1,4 @@
-name: Unpack ZIP File
+name: Build AppleDict in macOS VM
 
 on:
   push:
@@ -6,20 +6,55 @@ on:
   workflow_dispatch:
 
 jobs:
-  unzip-job:
-    runs-on: ubuntu-latest
+  build-dictionary:
+    runs-on: macos-latest
 
     steps:
+      # 1. Скачиваем репозиторий с вашим ZIP-архивом
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Unpack ZIP archive
+      # 2. Скачиваем утилиты Apple Dictionary Development Kit (DDK)
+      - name: Clone Apple Dictionary Development Kit
+        run: |
+          git clone https://github.com/SebastianSzturo/Dictionary-Development-Kit.git ddk
+
+      # 3. Распаковываем исходный ZIP-архив
+      - name: Unpack AppleDict Sources
         run: |
           mkdir -p dict_src
           unzip -o ApresyanEnRu.dictionary.zip -d dict_src
 
-      - name: Upload Unzipped Content
+      # 4. Компилируем словарь с помощью Apple DDK
+      - name: Build Dictionary with Apple DDK
+        run: |
+          # Указываем путь к инструментам сборки Apple
+          export DICT_BUILD_TOOL_DIR="$(pwd)/ddk"
+          
+          # Автоматически находим папку, в которой лежит Makefile
+          MAKEFILE_PATH=$(find dict_src -name "Makefile" | head -n 1)
+          MAKEFILE_DIR=$(dirname "$MAKEFILE_PATH")
+          
+          echo "Сборка запускается в папке: $MAKEFILE_DIR"
+          cd "$MAKEFILE_DIR"
+          make
+
+      # 5. Упаковываем скомпилированный словарь в ZIP
+      - name: Compress Compiled Dictionary
+        run: |
+          # Находим скомпилированную папку .dictionary (обычно лежит внутри objects/)
+          DICT_PATH=$(find dict_src -name "*.dictionary" -type d | head -n 1)
+          echo "Найден скомпилированный словарь: $DICT_PATH"
+          
+          DICT_DIR=$(dirname "$DICT_PATH")
+          DICT_NAME=$(basename "$DICT_PATH")
+          
+          cd "$DICT_DIR"
+          zip -r "$GITHUB_WORKSPACE/ApresyanEnRu-Compiled.dictionary.zip" "$DICT_NAME"
+
+      # 6. Сохраняем скомпилированный файл в скачиваемые артефакты
+      - name: Upload Compiled Dictionary
         uses: actions/upload-artifact@v4
         with:
-          name: Unzipped-Files
-          path: dict_src/
+          name: ApresyanEnRu-AppleDict
+          path: ApresyanEnRu-Compiled.dictionary.zip
